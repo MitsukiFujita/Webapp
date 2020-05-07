@@ -59,111 +59,6 @@ function parse_form(){
 }
 
 #-----------------------------------------------------------
-# 商品登録
-#-----------------------------------------------------------
-function item_insert(){
-	global $in;
-	global $db;
-	global $tmpl_dir;
-
-	#エラーチェック
-	$error_notes="";
-	if($in["item_name"] == ""){
-		$error_notes.="・商品名が未入力です。<br>";
-	}
-	if($in["item_price"] == ""){
-		$error_notes.="・値段が未入力です。<br>";
-	}
-	
-	#エラーが存在する場合
-	if($error_notes != "") {
-		error($error_notes);
-	}
-
-	# プリペアードステートメントを準備
-	$stmt = $db->prepare('INSERT INTO item (item_name, item_price, item_flag) VALUES (:item_name, :item_price, 1)');
-
-	# 変数を束縛する
-	$stmt->bindParam(':item_name', $item_name);
-	$stmt->bindParam(':item_price', $item_price);
-
-	# 変数に値を設定し、SQLを実行
-	$item_name = $in["item_name"];
-	$item_price = $in["item_price"];
-	$stmt->execute();
-}
-
-#-----------------------------------------------------------
-# 商品編集
-#-----------------------------------------------------------
-function item_update(){
-	global $in;
-	global $db;
-	global $tmpl_dir;
-
-	#エラーチェック
-	$error_notes="";
-	if($in["item_id"] == ""){
-		$error_notes.="・編集する商品を選択してください。<br>";
-	}
-	if($in["item_name"] == ""){
-		$error_notes.="・商品名が未入力です。<br>";
-	}
-	if($in["item_price"] == ""){
-		$error_notes.="・値段が未入力です。<br>";
-	}
-	
-	#エラーが存在する場合
-	if($error_notes != "") {
-		error($error_notes);
-	}
-
-	# プリペアードステートメントを準備
-	$stmt = $db->prepare('UPDATE item SET item_name = :item_name, item_price = :item_price where item_id = :item_id');
-
-	# 変数を束縛する
-	$stmt->bindParam(':item_id', $item_id);
-	$stmt->bindParam(':item_name', $item_name);
-	$stmt->bindParam(':item_price', $item_price);
-
-	# 変数に値を設定し、SQLを実行
-	$item_id = $in["item_id"];
-	$item_name = $in["item_name"];
-	$item_price = $in["item_price"];
-	$stmt->execute();
-}
-
-#-----------------------------------------------------------
-# 商品削除
-#-----------------------------------------------------------
-function item_delete(){
-	global $in;
-	global $db;
-	global $tmpl_dir;
-
-	#エラーチェック
-	$error_notes="";
-	if($in["item_id"] == ""){
-		$error_notes.="・削除する商品を選択してください。<br>";
-	}
-	
-	#エラーが存在する場合
-	if($error_notes != "") {
-		error($error_notes);
-	}
-
-	# プリペアードステートメントを準備
-	$stmt = $db->prepare('UPDATE item SET item_flag = 0 WHERE item_id = :item_id');
-
-	# 変数を束縛する
-	$stmt->bindParam(':item_id', $item_id);
-
-	# 変数に値を設定し、SQLを実行
-	$item_id = $in["item_id"];
-	$stmt->execute();
-}
-
-#-----------------------------------------------------------
 # 商品一覧
 #-----------------------------------------------------------
 function item_search(){
@@ -187,9 +82,11 @@ function item_search(){
 		$item_data .= "<tr>";
 		$item_data .= "<td class=\"form-left\">$item_id</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
+		#$item_data .= "<td class=\"form-left\">$row[item_color]</td>";
+		$item_data .= "<td class=\"form-left\">'blue'</td>";
+		#$item_data .= "<td class=\"form-left\">$row[item_exist]</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id\">編集</a></td>";
-		$item_data .= "<td><a href=\"$script_name?mode=item&state=delete&item_id=$item_id\">削除</a></td>";
+		$item_data .= "<td class=\"form-left\">'none'</td>";
 		$item_data .= "</tr>\n";
 	}
 
@@ -202,14 +99,10 @@ function item_search(){
 		$row = $stmt->fetch();
 		$item_name = $row["item_name"];
 		$item_price = $row["item_price"];
-		
-		# 掲示板テンプレート読み込み
-		$tmpl = page_read("item_edit");
-		# 文字変換
-		$tmpl = str_replace("!item_id!",$in["item_id"],$tmpl);
-		$tmpl = str_replace("!item_name!",$item_name,$tmpl);
-		$tmpl = str_replace("!item_price!",$item_price,$tmpl);
-		$tmpl = str_replace("!item_data!",$item_data,$tmpl);
+		#$item_exist = $row["item_exist"];
+		#$item_color = $row["item_color"];
+		$item_exist = "none";
+		$item_color = "blue";
 	}
 	else{
 		# 掲示板テンプレート読み込み
@@ -221,7 +114,6 @@ function item_search(){
 	echo $tmpl;
 	exit;
 }
-
 #-----------------------------------------------------------
 # エラー画面
 #-----------------------------------------------------------

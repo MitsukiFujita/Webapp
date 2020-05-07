@@ -7,18 +7,20 @@
 </head>
 <body>
 <form action="management.php">
-<input type="submit" name="tops" value="管理">
+<input type="submit" name="manage" value="管理">
+<input type="hidden" name="item_kind" value="!item_kind!">
 </form>
-<form action="">
+<form action="customer.php" method ="get">
 <ul>
-    <li><input type="button" name="tops" value="トップス"></li>
-    <li><input type="button" name="bottoms" value="ボトムス"></li>
-    <li><input type="button" name="accessory" value="アクセサリー"></li>
+    <li><input type="submit" name="item_kind" value="トップス"></li>
+    <li><input type="submit" name="item_kind" value="ボトムス"></li>
+    <li><input type="submit" name="item_kind" value="アクセサリー"></li>
 </ul>
 </form>
 <h2>!item_kind!商品一覧</h2>
 <table border=1>
 <tr><th>商品ID</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th>
+!item_data!
 </table>
 </body>
 </html>
