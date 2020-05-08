@@ -9,7 +9,7 @@ error_reporting(E_ALL & ~E_NOTICE);
 $testuser ="testuser";
 $testpass ="testpass";
 $host ="localhost";
-$datebase ="shop";
+$datebase ="shop_item";
 
 # テンプレートディレクトリ
 $tmpl_dir = "./tmpl";
@@ -70,7 +70,7 @@ function item_search(){
 	$script_name=$_SERVER['SCRIPT_NAME'];
 
 	# SQLを作成
-	$query = "SELECT * FROM item WHERE item_flag = 1";
+	$query = "SELECT * FROM tops_data WHERE item_flag = 1";
 	
 	# プリペアードステートメントを準備
 	$stmt = $db->prepare($query);
@@ -79,29 +79,40 @@ function item_search(){
 	$item_data = "";	
 	while($row = $stmt->fetch()){
 		$item_id = $row['item_id'];
+
+	# SQLを作成
+		$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id";
+	
+	# プリペアードステートメントを準備
+		$stmt2 = $db->prepare($query2);
+		$stmt2->bindParam(':item_id', $item_id);
+		$stmt2->execute();
+
+		$item_color="";
+		while($row2 = $stmt2->fetch()){
+			$item_color .= "<td class=\"form-left\">$row2[color_name]</td>";
+		}
+
 		$item_data .= "<tr>";
 		$item_data .= "<td class=\"form-left\">$item_id</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
-		#$item_data .= "<td class=\"form-left\">$row[item_color]</td>";
-		$item_data .= "<td class=\"form-left\">'blue'</td>";
-		#$item_data .= "<td class=\"form-left\">$row[item_exist]</td>";
+		$item_data .= "<td class=\"form-left\">$row[item_color]</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">'none'</td>";
+		$item_data .= "<td class=\"form-left\">$row[item_exist]</td>";
 		$item_data .= "</tr>\n";
 	}
 
 	if($in["item_id"] != ""){
 		# 選択した商品IDに対応する情報を取得
-		$stmt = $db->prepare('SELECT * FROM item WHERE item_id = :item_id');
+		$stmt = $db->prepare('SELECT * FROM tops_data WHERE item_id = :item_id');
 		$stmt->bindParam(':item_id', $item_id);
 		$item_id = $in["item_id"];
 		$stmt->execute();
 		$row = $stmt->fetch();
 		$item_name = $row["item_name"];
 		$item_price = $row["item_price"];
-		#$item_exist = $row["item_exist"];
+		$item_exist = $row["item_exist"];
 		#$item_color = $row["item_color"];
-		$item_exist = "none";
 		$item_color = "blue";
 	}
 	else{

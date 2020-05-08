@@ -9,7 +9,8 @@ error_reporting(E_ALL & ~E_NOTICE);
 $testuser ="testuser";
 $testpass ="testpass";
 $host ="localhost";
-$datebase ="shop";
+$datebase ="shop_item";
+$item_table = "tops_data";
 
 # テンプレートディレクトリ
 $tmpl_dir = "./tmpl";
@@ -82,7 +83,7 @@ function item_insert(){
 	}
 
 	# プリペアードステートメントを準備
-	$stmt = $db->prepare('INSERT INTO item (item_name, item_price, item_flag) VALUES (:item_name, :item_price, 1)');
+	$stmt = $db->prepare('INSERT INTO tops_data (item_name, item_price) VALUES (:item_name, :item_price)');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_name', $item_name);
@@ -118,7 +119,7 @@ function color_update(){
 	}
 
 	# プリペアードステートメントを準備
-	$stmt = $db->prepare('UPDATE item SET item_name = :item_name, item_price = :item_price where item_id = :item_id');
+	$stmt = $db->prepare('UPDATE tops_data SET item_name = :item_name, item_price = :item_price where item_id = :item_id');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_id', $item_id);
@@ -158,7 +159,7 @@ function item_update(){
 	}
 
 	# プリペアードステートメントを準備
-	$stmt = $db->prepare('UPDATE item SET item_name = :item_name, item_price = :item_price where item_id = :item_id');
+	$stmt = $db->prepare('UPDATE tops_data SET item_name = :item_name, item_price = :item_price where item_id = :item_id');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_id', $item_id);
@@ -192,7 +193,7 @@ function item_delete(){
 	}
 
 	# プリペアードステートメントを準備
-	$stmt = $db->prepare('UPDATE item SET item_flag = 0 WHERE item_id = :item_id');
+	$stmt = $db->prepare('UPDATE tops_data SET item_flag = 0 WHERE item_id = :item_id');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_id', $item_id);
@@ -218,7 +219,7 @@ function item_search(){
 	$script_name=$_SERVER['SCRIPT_NAME'];
 
 	# SQLを作成
-	$query = "SELECT * FROM item WHERE item_flag = 1";
+	$query = "SELECT * FROM tops_data WHERE item_flag = 1";
 	
 	# プリペアードステートメントを準備
 	$stmt = $db->prepare($query);
@@ -232,9 +233,8 @@ function item_search(){
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
 		#$item_data .= "<td class=\"form-left\">$row[item_color]</td>";
 		$item_data .= "<td class=\"form-left\">'blue'</td>";
-		#$item_data .= "<td class=\"form-left\">$row[item_exist]</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">'none'</td>";
+		$item_data .= "<td class=\"form-left\">$row[item_exist]</td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id&item_kind=$item_kind\">編集</a></td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&color_flag=1&item_id=$item_id&item_kind=$item_kind\">色追加</a></td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&state=delete&item_id=$item_id&item_kind=$item_kind\">削除</a></td>";
@@ -243,16 +243,15 @@ function item_search(){
 
 	if($in["item_id"] != ""){
 		# 選択した商品IDに対応する情報を取得
-		$stmt = $db->prepare('SELECT * FROM item WHERE item_id = :item_id');
+		$stmt = $db->prepare('SELECT * FROM tops_data WHERE item_id = :item_id');
 		$stmt->bindParam(':item_id', $item_id);
 		$item_id = $in["item_id"];
 		$stmt->execute();
 		$row = $stmt->fetch();
 		$item_name = $row["item_name"];
 		$item_price = $row["item_price"];
-		#$item_exist = $row["item_exist"];
+		$item_exist = $row["item_exist"];
 		#$item_color = $row["item_color"];
-		$item_exist = "none";
 		$item_color = "blue";
 		
 		# 掲示板テンプレート読み込み
