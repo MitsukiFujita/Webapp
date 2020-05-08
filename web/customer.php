@@ -66,11 +66,18 @@ function item_search(){
 	global $db;
 	global $tmpl_dir;
 
+	if(isset($_GET["item_kind"])){$item_kind = $_GET["item_kind"];}
+	if(isset($_in["item_kind"])){$item_kind = $_in["item_kind"];}
+	if(isset($_POST["item_kind"])){$item_kind = $_POST["item_kind"];}
+
+
 	# 自身のパス
 	$script_name=$_SERVER['SCRIPT_NAME'];
 
 	# SQLを作成
-	$query = "SELECT * FROM tops_data WHERE item_flag = 1";
+	if($item_kind=="トップス"){$query = "SELECT * FROM tops_data WHERE item_flag = 1";}
+	if($item_kind=="ボトムス"){$query = "SELECT * FROM bottoms_data WHERE item_flag = 1";}
+	if($item_kind=="アクセサリー"){$query = "SELECT * FROM accessory_data WHERE item_flag = 1";}
 	
 	# プリペアードステートメントを準備
 	$stmt = $db->prepare($query);
@@ -81,8 +88,9 @@ function item_search(){
 		$item_id = $row['item_id'];
 
 	# SQLを作成
-		$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id";
-	
+		if($item_kind=="トップス"){$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id";}
+		if($item_kind=="ボトムス"){$query2 = "SELECT * FROM bottoms_color WHERE item_id = :item_id";}
+		if($item_kind=="アクセサリー"){$query2 = "SELECT * FROM accessory_color WHERE item_id = :item_id";}
 	# プリペアードステートメントを準備
 		$stmt2 = $db->prepare($query2);
 		$stmt2->bindParam(':item_id', $item_id);
@@ -90,40 +98,30 @@ function item_search(){
 
 		$item_color="";
 		while($row2 = $stmt2->fetch()){
-			$item_color .= "<td class=\"form-left\">$row2[color_name]</td>";
+			$item_color .= "$row2[color_name],";
 		}
+		$item_color= substr($item_color, 0, -1);
+
+		if($row['item_exist']==1) {$item_exist="有";}
+		if($row['item_exist']==0) {$item_exist="無";}
 
 		$item_data .= "<tr>";
 		$item_data .= "<td class=\"form-left\">$item_id</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
-		$item_data .= "<td class=\"form-left\">$row[item_color]</td>";
+		$item_data .= "<td class=\"form-left\">$item_color</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">$row[item_exist]</td>";
+		$item_data .= "<td class=\"form-left\">$item_exist</td>";
 		$item_data .= "</tr>\n";
 	}
-
-	if($in["item_id"] != ""){
-		# 選択した商品IDに対応する情報を取得
-		$stmt = $db->prepare('SELECT * FROM tops_data WHERE item_id = :item_id');
-		$stmt->bindParam(':item_id', $item_id);
-		$item_id = $in["item_id"];
-		$stmt->execute();
-		$row = $stmt->fetch();
-		$item_name = $row["item_name"];
-		$item_price = $row["item_price"];
-		$item_exist = $row["item_exist"];
-		#$item_color = $row["item_color"];
-		$item_color = "blue";
-	}
-	else{
-		# 掲示板テンプレート読み込み
-		$tmpl = page_read("list");
-		# 文字変換
-        $tmpl = str_replace("!item_data!",$item_data,$tmpl);
-        $tmpl = str_replace("!item_kind!",$_GET["item_kind"],$tmpl);
-	}
+	# 掲示板テンプレート読み込み
+	$tmpl = page_read("list");
+	# 文字変換
+	$tmpl = str_replace("!item_data!",$item_data,$tmpl);
+	$tmpl = str_replace("!item_kind!",$item_kind,$tmpl);
+	
 	echo $tmpl;
 	exit;
+
 }
 #-----------------------------------------------------------
 # エラー画面
