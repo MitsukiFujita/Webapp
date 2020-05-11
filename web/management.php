@@ -84,8 +84,11 @@ function item_insert(){
 	if($in["item_price"] == ""){
 		$error_notes.="・値段が未入力です。<br>";
 	}
-	if($in["item_color"] == ""){
+	if($in["color_name"] == ""){
 		$error_notes.="・色が未入力です。<br>";
+	}
+	if(item_check()){
+	$error_notes.="・登録済みの商品です。<br>";
 	}
 	
 	#エラーが存在する場合
@@ -107,9 +110,11 @@ function item_insert(){
 	$item_price = $in["item_price"];
 	$stmt->execute();
 
+	# プリペアードステートメントを準備
 	if($item_kind=="トップス"){$stmt = $db->prepare ('SELECT * FROM tops_data ORDER BY item_id DESC LIMIT 1');}
 	if($item_kind=="ボトムス"){$stmt = $db->prepare ('SELECT * FROM bottoms_data ORDER BY item_id DESC LIMIT 1');}
 	if($item_kind=="アクセサリー"){$stmt = $db->prepare ('SELECT * FROM accessory_data ORDER BY item_id DESC LIMIT 1');}
+	
 	$stmt->execute();
 	$row = $stmt->fetch();
 	$item_id = $row['item_id'];
@@ -123,10 +128,35 @@ function item_insert(){
 	$stmt->bindParam(':color_name', $color_name);
 
 	# 変数に値を設定し、SQLを実行
-	$color_name = $in["item_color"];
+	$color_name = $in["color_name"];
 	$stmt->execute();
 }
 
+#すでに存在する商品の名前にならないかチェックし、重複があるとTRUEを返す
+function item_check(){
+	global $in;
+	global $item_kind;
+	global $db;
+
+	$flag =FALSE;
+
+	if($item_kind=="トップス"){$query = "SELECT * FROM tops_data WHERE item_flag = 1";}
+	if($item_kind=="ボトムス"){$query = "SELECT * FROM bottoms_data WHERE item_flag = 1";}
+	if($item_kind=="アクセサリー"){$query = "SELECT * FROM accessory_data WHERE item_flag = 1";}
+
+	# プリペアードステートメントを準備
+	$stmt = $db->prepare($query);
+	$item_id = $in["item_id"];
+	$stmt->execute();
+
+	while($row = $stmt->fetch()){
+		if($in["item_name"] == $row['item_name']){
+			$flag = TRUE;
+			break;
+		}
+	}
+	return $flag;
+}
 
 #-----------------------------------------------------------
 # 色編集
@@ -142,8 +172,11 @@ function color_update(){
 	if($in["item_id"] == ""){
 		$error_notes.="・編集する商品を選択してください。<br>";
 	}
-	if($in["item_color"] == ""){
+	if($in["color_name"] == ""){
 		$error_notes.="・色が未入力です。<br>";
+	}
+	if(color_check()){
+		$error_notes.="・登録されている色です。<br>";
 	}
 	
 	#エラーが存在する場合
@@ -161,9 +194,36 @@ function color_update(){
 
 	# 変数に値を設定し、SQLを実行
 	$item_id = $in["item_id"];
-	$color_name = $in["item_color"];
+	$color_name = $in["color_name"];
 	$stmt->execute();
 
+}
+
+#指定した商品にすでに存在する色にならないかチェックし、重複があるとTRUEを返す
+function color_check(){
+	global $in;
+	global $item_kind;
+	global $db;
+
+	$flag =FALSE;
+
+	if($item_kind=="トップス"){$query = "SELECT * FROM tops_color WHERE item_id = :item_id";}
+	if($item_kind=="ボトムス"){$query = "SELECT * FROM bottoms_color WHERE item_id = :item_id";}
+	if($item_kind=="アクセサリー"){$query = "SELECT * FROM accessory_color WHERE item_id = :item_id";}
+
+	# プリペアードステートメントを準備
+	$stmt = $db->prepare($query);
+	$stmt->bindParam(':item_id', $item_id);
+	$item_id = $in["item_id"];
+	$stmt->execute();
+
+	while($row = $stmt->fetch()){
+		if($in["color_name"] == $row['color_name']){
+			$flag = TRUE;
+			break;
+		}
+	}
+	return $flag;
 }
 
 #-----------------------------------------------------------
@@ -185,6 +245,9 @@ function item_update(){
 	}
 	if($in["item_price"] == ""){
 		$error_notes.="・値段が未入力です。<br>";
+	}
+	if(rename_item_check()){
+		$error_notes.="・登録済みの商品です。<br>";
 	}
 
 	#エラーが存在する場合
@@ -209,6 +272,32 @@ function item_update(){
 	$item_price = $in["item_price"];
 	$item_exist = $in["item_exist"];
 	$stmt->execute();
+}
+
+#すでに存在する商品の名前にならないかチェックし、重複があるとTRUEを返す
+function rename_item_check(){
+	global $in;
+	global $item_kind;
+	global $db;
+
+	$flag =FALSE;
+
+	if($item_kind=="トップス"){$query = "SELECT * FROM tops_data WHERE item_flag = 1";}
+	if($item_kind=="ボトムス"){$query = "SELECT * FROM bottoms_data WHERE item_flag = 1";}
+	if($item_kind=="アクセサリー"){$query = "SELECT * FROM accessory_data WHERE item_flag = 1";}
+
+	$stmt = $db->prepare($query);
+	$item_id = $in["item_id"];
+	$stmt->execute();
+
+	while($row = $stmt->fetch()){
+		if($in["item_id"] == $row['item_id']) continue;#自分の名前はチェックを飛ばす
+		if($in["item_name"] == $row['item_name']){
+			$flag = TRUE;
+			break;
+		}
+	}
+	return $flag;
 }
 
 #-----------------------------------------------------------
@@ -268,29 +357,31 @@ function item_search(){
 	while($row = $stmt->fetch()){
 		$item_id = $row['item_id'];
 
-		# SQLを作成
-		if($item_kind=="トップス"){$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id";}
-		if($item_kind=="ボトムス"){$query2 = "SELECT * FROM bottoms_color WHERE item_id = :item_id";}
-		if($item_kind=="アクセサリー"){$query2 = "SELECT * FROM accessory_color WHERE item_id = :item_id";}
+		# 色取得用のSQLを作成
+		if($item_kind=="トップス"){$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id ORDER BY color_name";}
+		if($item_kind=="ボトムス"){$query2 = "SELECT * FROM bottoms_color WHERE item_id = :item_id ORDER BY color_name";}
+		if($item_kind=="アクセサリー"){$query2 = "SELECT * FROM accessory_color WHERE item_id = :item_id ORDER BY color_name";}
 	
 		# プリペアードステートメントを準備
 		$stmt2 = $db->prepare($query2);
 		$stmt2->bindParam(':item_id', $item_id);
 		$stmt2->execute();
 
-		$item_color="";
+		#　商品ごとに、存在する色を並べる
+		$color_name="";
 		while($row2 = $stmt2->fetch()){
-			$item_color .= "$row2[color_name],";
+			$color_name .= "$row2[color_name],";
 		}
-		$item_color= substr($item_color, 0, -1);
+		$color_name= substr($color_name, 0, -1);
 
+		#商品の有無を数字から漢字に変換
 		if($row['item_exist']==1) {$item_exist="有";}
 		if($row['item_exist']==0) {$item_exist="無";}
 		
 		$item_data .= "<tr>";
 		$item_data .= "<td class=\"form-left\">$item_id</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
-		$item_data .= "<td class=\"form-left\">$item_color</td>";
+		$item_data .= "<td class=\"form-left\">$color_name</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
 		$item_data .= "<td class=\"form-left\">$item_exist</td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id&item_kind=$item_kind\">編集</a></td>";
@@ -312,8 +403,9 @@ function item_search(){
 		$item_name = $row["item_name"];
 		$item_price = $row["item_price"];
 		$item_exist = $row["item_exist"];
-		$item_color = $row["item_color"];
+		$color_name = $row["color_name"];
 
+		#現在の状態をラジオボタンでチェック済みにしておく
 		if($item_exist==1) {
 			$item_exist="有";
 			$checked1="checked";
@@ -322,20 +414,20 @@ function item_search(){
 			$checked0="checked";
 		}
 
-		# SQLを作成
-		if($item_kind=="トップス"){$query = "SELECT * FROM tops_color WHERE item_id = :item_id";}
-		if($item_kind=="ボトムス"){$query = "SELECT * FROM bottoms_color WHERE item_id = :item_id";}
-		if($item_kind=="アクセサリー"){$query = "SELECT * FROM accessory_color WHERE item_id = :item_id";}
+		# 色取得用のSQLを作成
+		if($item_kind=="トップス"){$query = "SELECT * FROM tops_color WHERE item_id = :item_id ORDER BY color_name";}
+		if($item_kind=="ボトムス"){$query = "SELECT * FROM bottoms_color WHERE item_id = :item_id ORDER BY color_name";}
+		if($item_kind=="アクセサリー"){$query = "SELECT * FROM accessory_color WHERE item_id = :item_id ORDER BY color_name";}
 
-		# プリペアードステートメントを準備
+		#　商品ごとに、存在する色を並べる
 		$stmt = $db->prepare($query);
 		$stmt->bindParam(':item_id', $item_id);
 		$stmt->execute();	
-		$item_color="";
+		$color_name="";
 		while($row = $stmt->fetch()){
-			$item_color .= "$row[color_name],";
+			$color_name .= "$row[color_name],";
 		}
-		$item_color= substr($item_color, 0, -1);
+		$color_name= substr($color_name, 0, -1);
 		
 		# 掲示板テンプレート読み込み
 		if($in["color_flag"]==1){
@@ -349,13 +441,12 @@ function item_search(){
 		$tmpl = str_replace("!item_name!",$item_name,$tmpl);
 		$tmpl = str_replace("!item_price!",$item_price,$tmpl);
 		$tmpl = str_replace("!item_data!",$item_data,$tmpl);
-		$tmpl = str_replace("!item_color!",$item_color,$tmpl);
+		$tmpl = str_replace("!color_name!",$color_name,$tmpl);
 		$tmpl = str_replace("!item_exist!",$item_exist,$tmpl);
 		$tmpl = str_replace("!checked1!",$checked1,$tmpl);
 		$tmpl = str_replace("!checked0!",$checked0,$tmpl);
 		$tmpl = str_replace("!item_kind!",$item_kind,$tmpl);
-	}
-	else{
+	}else{
 		# 掲示板テンプレート読み込み
 		$tmpl = page_read("managementlist");
 		# 文字変換

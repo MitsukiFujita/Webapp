@@ -87,20 +87,22 @@ function item_search(){
 	while($row = $stmt->fetch()){
 		$item_id = $row['item_id'];
 
-	# SQLを作成
-		if($item_kind=="トップス"){$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id";}
-		if($item_kind=="ボトムス"){$query2 = "SELECT * FROM bottoms_color WHERE item_id = :item_id";}
-		if($item_kind=="アクセサリー"){$query2 = "SELECT * FROM accessory_color WHERE item_id = :item_id";}
-	# プリペアードステートメントを準備
+		# 色取得用のSQLを作成
+		if($item_kind=="トップス"){$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id ORDER BY color_name";}
+		if($item_kind=="ボトムス"){$query2 = "SELECT * FROM bottoms_color WHERE item_id = :item_id ORDER BY color_name";}
+		if($item_kind=="アクセサリー"){$query2 = "SELECT * FROM accessory_color WHERE item_id = :item_id ORDER BY color_name";}
+		
+		# プリペアードステートメントを準備
 		$stmt2 = $db->prepare($query2);
 		$stmt2->bindParam(':item_id', $item_id);
 		$stmt2->execute();
 
-		$item_color="";
+		#色をカンマで区切って並べる
+		$color_name="";
 		while($row2 = $stmt2->fetch()){
-			$item_color .= "$row2[color_name],";
+			$color_name .= "$row2[color_name],";
 		}
-		$item_color= substr($item_color, 0, -1);
+		$color_name= substr($color_name, 0, -1);
 
 		if($row['item_exist']==1) {$item_exist="有";}
 		if($row['item_exist']==0) {$item_exist="無";}
@@ -108,7 +110,7 @@ function item_search(){
 		$item_data .= "<tr>";
 		$item_data .= "<td class=\"form-left\">$item_id</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
-		$item_data .= "<td class=\"form-left\">$item_color</td>";
+		$item_data .= "<td class=\"form-left\">$color_name</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
 		$item_data .= "<td class=\"form-left\">$item_exist</td>";
 		$item_data .= "</tr>\n";
