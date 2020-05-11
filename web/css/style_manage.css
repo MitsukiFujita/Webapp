@@ -1,0 +1,11 @@
+body{
+	padding: 10px;
+}
+.go_back{
+  width:56px;
+}
+
+.go_back input{
+  width:56px;
+  margin: 20px auto;
+}
