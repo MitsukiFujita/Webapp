@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>!category_name!商品一覧</title>
+<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+<link href="css/style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+<header>
+<form action="management.php" id="manage_button">
+<input type="submit" name="manage" value="管理">
+<input type="hidden" name="category_name" value="!category_name!">
+</form>
+<nav id="navi_button">
+<form action="customer.php" method ="get">
+!category_data!
+</nav>
+</form>
+</header>
+
+<main class="top_page">
+<h2>!category_name!商品一覧</h2>
+<table border=1>
+<tr><th>商品カテゴリ</th><th>商品名</th><th>色</th><th>値段</th><th>在庫</th><th>購入数</th><th>購入</th>
+!item_data!
+</table>
+
+</main>
+
+<footer>
+<div id="go_top">
+<form action="index.php">
+<input type="submit" value="topへ">
+</form>
+</div>
+</footer>
+
+</body>
+</html>
