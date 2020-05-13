@@ -9,6 +9,11 @@
 <body>
 
 <header>
+<form action="management.php" id="manage_button">
+<input type="submit" name="manage" value="色追加">
+<input type="submit" name="manage" value="カテゴリ追加">
+<input type="hidden" name="category_name" value="!category_name!">
+</form>
 <nav id="navi_button">
 <form action="management.php" method ="get">
 !category_data!
@@ -16,11 +21,10 @@
 </form>
 </header>
 
-<h2>!category_name!商品登録</h2>
+<h2>商品登録</h2>
 <form method="post" action="management.php">
 <table border=1>
-	</tr>
-    	<tr>
+    <tr>
 		<td>カテゴリ</td>
 		<td>!category_list!</td>
 	</tr>
@@ -36,10 +40,11 @@
 		<td>色</td>
 		<td>!color_list!</td>
 	</tr>
-		<tr>
+<!--	<tr>
 		<td>作成日時</td>
 		<td><input name="create_date" type="text" value=""></td>
 	</tr>
+-->
 	<tr>
 		<td colspan="2"><input type="submit" name="sub" value="送信"></td>
 	</tr>

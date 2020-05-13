@@ -1,14 +1,12 @@
-
 <!doctype html>
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title>!category_name!管理画面</title>
-<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="css/normalize.css">
 <link href="css/style_manage.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-
 <header>
 <nav id="navi_button">
 <form action="management.php" method ="get">
@@ -17,49 +15,58 @@
 </form>
 </header>
 
-<h2>!category_name!商品編集</h2>
+<h2>商品在庫登録</h2>
 <form method="post" action="management.php">
 <table border=1>
 	<tr>
-	<tr>
-		<td>カテゴリ</td>
-		<td>!category_list!</td>
-	</tr>
 		<td>商品ID</td>
 		<td>!item_id!</td>
 	</tr>
+    <tr>
+		<td>カテゴリ</td>
+		<td>!category_name!</td>
+	</tr>
 	<tr>
 		<td>商品名</td>
-		<td><input name="item_name" type="text" value="!item_name!"></td>
+		<td>!item_name!</td>
 	</tr>
 	<tr>
 		<td>値段</td>
-		<td><input name="item_price" type="text" value="!item_price!"></td>
+		<td>!item_price!</td>
 	</tr>
-    <tr>
+    	<tr>
 		<td>色</td>
-		<td>!color_list!</td>
+		<td>!color_name!</td>
 	</tr>
     <tr>
 		<td>作成日時</td>
-		<td>
-		!create_date!
-		</td>
+		<td>!create_date!</td>
 	</tr>
 	<tr>
-		<td colspan="2"><input type="submit" name="sub" value="送信"></td>
+		<td>在庫変更数</td>
+		<td>
+		<input name="item_increase" type="text" >
+		<input type="submit" name="sub" value="送信">
+		</td>
 	</tr>
 </table>
 <input type="hidden" name="mode" value="item">
+<input type="hidden" name="state" value="stock">
 <input type="hidden" name="category_name" value="!category_name!">
-<input type="hidden" name="state" value="update">
 <input type="hidden" name="item_id" value="!item_id!">
+<input type="hidden" name="change_stock_flag" value=1>
 </form>
 <br>
 
+<h2>在庫変動履歴</h2>
+<table border=1>
+<tr><th>履歴管理ID</th><th>変更日時</th><th>増減値</th><th>商品ID</th>
+!stock_data!
+</table>
+
 <h2>!category_name!商品一覧</h2>
 <table border=1>
-<tr><th>商品ID</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>色追加</th><th>削除</th>
+<tr><th>カテゴリ</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>色追加</th><th>削除</th>
 !item_data!
 </table>
 <form action="management.php" method ="get" class="go_back">

@@ -5,7 +5,6 @@ require "function_list.php";
 #-----------------------------------------------------------
 # 基本設定
 #-----------------------------------------------------------
-
 #データベース情報
 $testuser ="testuser";
 $testpass ="testpass";
@@ -26,7 +25,12 @@ try {
 	if($in["state"] == "insert") { item_insert(); }
 	else if($in["state"] == "update") { item_update(); }
 	else if($in["state"] == "delete") { item_delete(); }
-	item_search_customer();
+	else if($in["state"] == "buy"){ 
+		$in["item_increase"] =$in["item_increase"]*-1;
+		$row = get_data_from_name($in['item_name'],3);
+		$in["item_id"] = $row["item_id"];
+		stock_update(); }
+		item_search_customer();
 }catch (PDOException $e) {
 	die ("PDO Error:" . $e->getMessage());
 }
@@ -55,45 +59,51 @@ function item_search_customer(){
 	$stmt->bindParam(':category_id', $category_id);
 	$stmt->execute();
 
+	$item_increase = pulldown_list(0,-1,10,"item_increase");
+
 	$item_data = "";
 	$item_name ="";
 	while($row = $stmt->fetch()){
 		if ($item_name == $row["item_name"]){continue;}
 		$item_name = $row["item_name"];
 
-		$color_list="<select name='color_list'>";
+		$color_list="<select name='color_id'>";
 
-		$query2 = "SELECT * FROM item_data WHERE  item_name = :want_name";	
+		$query2 = "SELECT * FROM item_data WHERE item_name = :want_name AND category_id = :category_id";	
 		$stmt2 = $db->prepare($query2);
 		$stmt2->bindParam(':want_name', $item_name);
+		$stmt2->bindParam(':category_id', $category_id);
 		$stmt2->execute();
 
 		while($row2 = $stmt2->fetch()){
 			$row3 = get_data_from_id($row2["color_id"],2);
-			$color_list.= "<option value='$row2[item_id]'>$row3[color_name]</option>";
+			$color_list.= "<option value='$row2[color_id]'>$row3[color_name]</option>";
 		}
 		$color_list .= "</select>";
 
-		$item_number = $row['item_number'];
-		if( $item_number == 0 ){$item_number = "sold out";}
+		$item_stock = $row['item_stock'];
+		if( $item_stock == 0 ){$item_stock = "sold out";}
 
 
 		$item_data .= "<tr>";
+		$item_data .= "<form action='customer.php' method='post'>";
 		$item_data .= "<td class=\"form-left\">$in[category_name]</td>";
 		$item_data .= "<td class=\"form-left\">$item_name</td>";
 		$item_data .= "<td class=\"form-left\">$color_list</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">$item_number</td>";
-		$item_data .= "<form action='customer.php' method='post'>";
-		$item_data .= "<td class=\"form-left\"><input type='text' value=''>個</td>";
+		$item_data .= "<td class=\"form-left\">$item_stock</td>";
+		$item_data .= "<td class=\"form-left\">$item_increase 個</td>";
 		$item_data .= "<td class=\"form-left\"><input type='submit' value='購入'></td>";
 		$item_data .= "<input type='hidden' name='category_name' value='$in[category_name]'>";
-		$item_data .= "<input type='hidden' name='item_id' value='$in[item_id]'></form>";
+		$item_data .= "<input type='hidden' name='category_id' value='$category_id'>";
+		$item_data .= "<input type='hidden' name='item_id' value='$row[item_id]'>";
+		$item_data .= "<input type='hidden' name='item_name' value='$row[item_name]'>";
+		$item_data .= "<input type='hidden' name='state' value='buy'>";
+		$item_data .= "</form>";
 		$item_data .= "</tr>\n";
 	}
 	# 掲示板テンプレート読み込み
 	$tmpl = page_read("list");
-
 	$category_data =category_list();
 
 	# 文字変換
@@ -106,19 +116,4 @@ function item_search_customer(){
 
 }
 
-#-----------------------------------------------------------
-# エラー画面
-#-----------------------------------------------------------
-function error($errmes){
-	global $tmpl_dir;
-	$msg = $errmes;
-
-	# エラーテンプレート読み込み
-	$tmpl = page_read("error");
-
-	# 文字置き換え
-	#$tmpl = str_replace("!message!","$msg",$tmpl);
-	echo $tmpl;
-	exit;
-}
 

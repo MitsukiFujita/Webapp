@@ -26,7 +26,7 @@ try {
 	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	if($in["state"] == "insert") { item_insert(); }
 	else if($in["state"] == "update") { item_update(); }
-	else if($in["state"] == "color") { color_update(); }
+	else if($in["state"] == "stock") { stock_update(); }
 	else if($in["state"] == "delete") { item_delete(); }
 	item_search_manage();
 }catch (PDOException $e) {
@@ -83,7 +83,7 @@ function item_check(){
 
 	$flag =FALSE;
 
-	$query = "SELECT * FROM item_data WHERE item_flag = 1";
+	$query = "SELECT * FROM item_data/* WHERE item_flag = 1*/";
 
 	# プリペアードステートメントを準備
 	$stmt = $db->prepare($query);
@@ -91,6 +91,7 @@ function item_check(){
 	$stmt->execute();
 
 	while($row = $stmt->fetch()){
+		if($in["item_id"] == $row["item_id"])continue;
 		if($in["category_id"] != $row["category_id"])continue;
 		if($in["item_name"] != $row['item_name'])continue;
 		if($in["color_id"] != $row['color_id'])continue;
@@ -107,7 +108,6 @@ function item_update(){
 	global $in;
 	global $db;
 	global $tmpl_dir;
-	global $category_name;
 
 	#エラーチェック
 	$error_notes="";
@@ -120,7 +120,7 @@ function item_update(){
 	if($in["item_price"] == ""){
 		$error_notes.="・値段が未入力です。<br>";
 	}
-	if(item_check($in["item_id"])){
+	if(item_check()){
 		$error_notes.="・登録済みの商品です。<br>";
 	}
 
@@ -130,21 +130,21 @@ function item_update(){
 	}
 
 	# プリペアードステートメントを準備
-	if($category_name=="トップス"){$stmt = $db->prepare('UPDATE tops_data SET item_name = :item_name, item_price = :item_price, item_exist = :item_exist where item_id = :item_id');}
-	if($category_name=="ボトムス"){$stmt = $db->prepare('UPDATE bottoms_data SET item_name = :item_name, item_price = :item_price, item_exist = :item_exist where item_id = :item_id');}
-	if($category_name=="アクセサリー"){$stmt = $db->prepare('UPDATE accessory_data SET item_name = :item_name, item_price = :item_price, item_exist = :item_exist where item_id = :item_id');}
+	$stmt = $db->prepare('UPDATE item_data SET item_name = :item_name, item_price = :item_price, category_id=:category_id, color_id=:color_id where item_id = :item_id');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_id', $item_id);
 	$stmt->bindParam(':item_name', $item_name);
 	$stmt->bindParam(':item_price', $item_price);
-	$stmt->bindParam(':item_exist', $item_exist);
+	$stmt->bindParam(':category_id', $category_id);
+	$stmt->bindParam(':color_id', $color_id);
 
 	# 変数に値を設定し、SQLを実行
 	$item_id = $in["item_id"];
 	$item_name = $in["item_name"];
 	$item_price = $in["item_price"];
-	$item_exist = $in["item_exist"];
+	$category_id = $in["category_id"];
+	$color_id = $in["color_id"];
 	$stmt->execute();
 }
 
@@ -274,8 +274,8 @@ function item_search_manage(){
 	$item_data = "";	
 	while($row = $stmt->fetch()){
 		$item_id = $row['item_id'];
-		$item_number = $row['item_number'];
-		if( $item_number == 0 ){$item_number = "sold out";}
+		$item_stock = $row['item_stock'];
+		if( $item_stock == 0 ){$item_stock = "sold out";}
 
 		$row2=get_data_from_id($row["color_id"],2);
 
@@ -284,17 +284,80 @@ function item_search_manage(){
 		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
 		$item_data .= "<td class=\"form-left\">$row2[color_name]</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">$item_number</td>";
+		$item_data .= "<td class=\"form-left\">$item_stock</td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id&category_name=$category_name\">編集</a></td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&change_stock_flag=1&item_id=$item_id&category_name=$category_name\">在庫操作</a></td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&state=delete&item_id=$item_id&category_name=$category_name\">削除</a></td>";
 		$item_data .= "</tr>\n";
 	}
+
+	if($in["item_id"] != ""){
+		# 選択した商品IDに対応する情報を取得
+		$stmt = $db->prepare('SELECT * FROM item_data WHERE item_id = :item_id');
+
+		$stmt->bindParam(':item_id', $item_id);
+		$item_id = $in["item_id"];
+		$stmt->execute();
+		$row = $stmt->fetch();
+
+		$item_name = $row["item_name"];
+		$item_price = $row["item_price"];
+		$item_exist = $row["item_exist"];
+		$create_date = $row["create_date"];
+
+
+		$row2 = get_data_from_id($row["color_id"],2);
+		$color_name =$row2["color_name"];
+
+
+		if($in["change_stock_flag"]==1){
+			$tmpl = page_read("stock_edit");
+
+			$row = get_data_from_name($category_name,1);
+			$category_id = $row["category_id"];
+		
+			# SQLを作成
+			$query = "SELECT * FROM item_update_data";
+			
+			# プリペアードステートメントを準備
+			$stmt = $db->prepare($query);
+			$stmt->execute();
+		
+			$stock_data = "";	
+			while($row = $stmt->fetch()){
+				$stock_data .= "<tr>";
+				$stock_data .= "<td class=\"form-left\">$row[update_id]</td>";
+				$stock_data .= "<td class=\"form-left\">$row[update_time]</td>";
+				$stock_data .= "<td class=\"form-left\">$row[item_increase]</td>";
+				$stock_data .= "<td class=\"form-left\">$row[item_id]</td>";
+				$sctok_data .= "</tr>\n";
+			}
+		}else{
+			$tmpl = page_read("item_edit");
+		}
+
+		$category_data =category_list();
+		$category_list = pulldown_list(1,$category_id);
+		$color_list = pulldown_list(2,$row["color_id"]);
+
+		# 文字変換
+		$tmpl = str_replace("!category_data!",$category_data,$tmpl);
+		$tmpl = str_replace("!category_list!",$category_list,$tmpl);
+		$tmpl = str_replace("!item_id!",$item_id,$tmpl);
+		$tmpl = str_replace("!item_name!",$item_name,$tmpl);
+		$tmpl = str_replace("!item_price!",$item_price,$tmpl);
+		$tmpl = str_replace("!item_data!",$item_data,$tmpl);
+		$tmpl = str_replace("!color_list!",$color_list,$tmpl);
+		$tmpl = str_replace("!color_name!",$color_name,$tmpl);
+		$tmpl = str_replace("!create_date!",$create_date,$tmpl);
+		$tmpl = str_replace("!category_name!",$category_name,$tmpl);
+		$tmpl = str_replace("!stock_data!",$stock_data,$tmpl);
+	}else{
 	# 掲示板テンプレート読み込み
 	$tmpl = page_read("managementlist");
 
 	$category_data =category_list();
-	$category_list = pulldown_list(1);
+	$category_list = pulldown_list(1,$category_id);
 	$color_list = pulldown_list(2);
 
 	# 文字変換
@@ -303,147 +366,9 @@ function item_search_manage(){
 	$tmpl = str_replace("!category_data!",$category_data,$tmpl);
 	$tmpl = str_replace("!color_list!",$color_list,$tmpl);
 	$tmpl = str_replace("!category_list!",$category_list,$tmpl);
-	
-	echo $tmpl;
-	exit;
-
-}
-
-function item_search(){
-	global $in;
-	global $db;
-	global $tmpl_dir;
-	global $category_name;
-
-	# 自身のパス
-	$script_name=$_SERVER['SCRIPT_NAME'];
-
-	# SQLを作成
-	if($category_name=="トップス"){$query = "SELECT * FROM tops_data WHERE item_flag = 1";}
-	if($category_name=="ボトムス"){$query = "SELECT * FROM bottoms_data WHERE item_flag = 1";}
-	if($category_name=="アクセサリー"){$query = "SELECT * FROM accessory_data WHERE item_flag = 1";}
-	# プリペアードステートメントを準備
-	$stmt = $db->prepare($query);
-	$stmt->execute();
-
-	$item_data = "";	
-	while($row = $stmt->fetch()){
-		$item_id = $row['item_id'];
-
-		# 色取得用のSQLを作成
-		if($category_name=="トップス"){$query2 = "SELECT * FROM tops_color WHERE item_id = :item_id ORDER BY color_name";}
-		if($category_name=="ボトムス"){$query2 = "SELECT * FROM bottoms_color WHERE item_id = :item_id ORDER BY color_name";}
-		if($category_name=="アクセサリー"){$query2 = "SELECT * FROM accessory_color WHERE item_id = :item_id ORDER BY color_name";}
-	
-		# プリペアードステートメントを準備
-		$stmt2 = $db->prepare($query2);
-		$stmt2->bindParam(':item_id', $item_id);
-		$stmt2->execute();
-
-		#　商品ごとに、存在する色を並べる
-		$color_name="";
-		while($row2 = $stmt2->fetch()){
-			$color_name .= "$row2[color_name],";
-		}
-		$color_name= substr($color_name, 0, -1);
-
-		#商品の有無を数字から漢字に変換
-		if($row['item_exist']==1) {$item_exist="有";}
-		if($row['item_exist']==0) {$item_exist="無";}
-		
-		$item_data .= "<tr>";
-		$item_data .= "<td class=\"form-left\">$item_id</td>";
-		$item_data .= "<td class=\"form-left\">$row[item_name]</td>";
-		$item_data .= "<td class=\"form-left\">$color_name</td>";
-		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">$item_exist</td>";
-		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id&category_name=$category_name\">編集</a></td>";
-		$item_data .= "<td><a href=\"$script_name?mode=item&change_stock_flag=1&item_id=$item_id&category_name=$category_name\">色追加</a></td>";
-		$item_data .= "<td><a href=\"$script_name?mode=item&state=delete&item_id=$item_id&category_name=$category_name\">削除</a></td>";
-		$item_data .= "</tr>\n";
-	}
-
-	if($in["item_id"] != ""){
-		# 選択した商品IDに対応する情報を取得
-		if($category_name=="トップス"){$stmt = $db->prepare('SELECT * FROM tops_data WHERE item_id = :item_id');}
-		if($category_name=="ボトムス"){$stmt = $db->prepare('SELECT * FROM bottoms_data WHERE item_id = :item_id');}
-		if($category_name=="アクセサリー"){$stmt = $db->prepare('SELECT * FROM accessory_data WHERE item_id = :item_id');}
-
-		$stmt->bindParam(':item_id', $item_id);
-		$item_id = $in["item_id"];
-		$stmt->execute();
-		$row = $stmt->fetch();
-		$item_name = $row["item_name"];
-		$item_price = $row["item_price"];
-		$item_exist = $row["item_exist"];
-		$color_name = $row["color_name"];
-
-		#現在の状態をラジオボタンでチェック済みにしておく
-		if($item_exist==1) {
-			$item_exist="有";
-			$checked1="checked";
-		}else if($item_exist==0) {
-			$item_exist="無";
-			$checked0="checked";
-		}
-
-		# 色取得用のSQLを作成
-		if($category_name=="トップス"){$query = "SELECT * FROM tops_color WHERE item_id = :item_id ORDER BY color_name";}
-		if($category_name=="ボトムス"){$query = "SELECT * FROM bottoms_color WHERE item_id = :item_id ORDER BY color_name";}
-		if($category_name=="アクセサリー"){$query = "SELECT * FROM accessory_color WHERE item_id = :item_id ORDER BY color_name";}
-
-		#　商品ごとに、存在する色を並べる
-		$stmt = $db->prepare($query);
-		$stmt->bindParam(':item_id', $item_id);
-		$stmt->execute();	
-		$color_name="";
-		while($row = $stmt->fetch()){
-			$color_name .= "$row[color_name],";
-		}
-		$color_name= substr($color_name, 0, -1);
-		
-		# 掲示板テンプレート読み込み
-		if($in["change_stock_flag"]==1){
-			$tmpl = page_read("color_edit");
-		}else{
-			$tmpl = page_read("item_edit");
-		}
-
-		# 文字変換
-		$tmpl = str_replace("!item_id!",$in["item_id"],$tmpl);
-		$tmpl = str_replace("!item_name!",$item_name,$tmpl);
-		$tmpl = str_replace("!item_price!",$item_price,$tmpl);
-		$tmpl = str_replace("!item_data!",$item_data,$tmpl);
-		$tmpl = str_replace("!color_name!",$color_name,$tmpl);
-		$tmpl = str_replace("!item_exist!",$item_exist,$tmpl);
-		$tmpl = str_replace("!checked1!",$checked1,$tmpl);
-		$tmpl = str_replace("!checked0!",$checked0,$tmpl);
-		$tmpl = str_replace("!category_name!",$category_name,$tmpl);
-	}else{
-		# 掲示板テンプレート読み込み
-		$tmpl = page_read("managementlist");
-		# 文字変換
-        $tmpl = str_replace("!item_data!",$item_data,$tmpl);
-        $tmpl = str_replace("!category_name!",$category_name,$tmpl);
 	}
 	echo $tmpl;
 	exit;
+
 }
 
-#-----------------------------------------------------------
-# エラー画面
-#-----------------------------------------------------------
-function error($errmes){
-	global $tmpl_dir;
-	global $category_name;
-
-	$msg = $errmes;
-
-	# エラーテンプレート読み込み
-	$tmpl = page_read("error");
-
-	# 文字置き換え
-	$tmpl = str_replace("!message!","$msg",$tmpl);
-	echo $tmpl;
-	exit;
-}
