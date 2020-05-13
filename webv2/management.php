@@ -51,65 +51,39 @@ function item_insert(){
 	if($in["item_price"] == ""){
 		$error_notes.="・値段が未入力です。<br>";
 	}
-	if($in["color_name"] == ""){
-		$error_notes.="・色が未入力です。<br>";
-	}
-	if(item_check(-1)){
+	if(item_check()){
 	$error_notes.="・登録済みの商品です。<br>";
 	}
-	
 	#エラーが存在する場合
 	if($error_notes != "") {
 		error($error_notes);
 	}
 
 	# プリペアードステートメントを準備
-	if($category_name=="トップス"){$stmt = $db->prepare('INSERT INTO tops_data (item_name, item_price) VALUES (:item_name, :item_price)');}
-	if($category_name=="ボトムス"){$stmt = $db->prepare('INSERT INTO bottoms_data (item_name, item_price) VALUES (:item_name, :item_price)');}
-	if($category_name=="アクセサリー"){$stmt = $db->prepare('INSERT INTO accessory_data (item_name, item_price) VALUES (:item_name, :item_price)');}
+	$stmt = $db->prepare('INSERT INTO item_data (item_name, item_price, color_id, category_id) VALUES (:item_name, :item_price, :color_id, :category_id)');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_name', $item_name);
 	$stmt->bindParam(':item_price', $item_price);
+	$stmt->bindParam(':color_id', $color_id);
+	$stmt->bindParam(':category_id', $category_id);
 
 	# 変数に値を設定し、SQLを実行
 	$item_name = $in["item_name"];
 	$item_price = $in["item_price"];
-	$stmt->execute();
-
-	# プリペアードステートメントを準備
-	if($category_name=="トップス"){$stmt = $db->prepare ('SELECT * FROM tops_data ORDER BY item_id DESC LIMIT 1');}
-	if($category_name=="ボトムス"){$stmt = $db->prepare ('SELECT * FROM bottoms_data ORDER BY item_id DESC LIMIT 1');}
-	if($category_name=="アクセサリー"){$stmt = $db->prepare ('SELECT * FROM accessory_data ORDER BY item_id DESC LIMIT 1');}
-	
-	$stmt->execute();
-	$row = $stmt->fetch();
-	$item_id = $row['item_id'];
-
-	if($category_name=="トップス"){$stmt = $db->prepare('INSERT INTO tops_color (item_id, color_name) VALUES (:item_id, :color_name)');}
-	if($category_name=="ボトムス"){$stmt = $db->prepare('INSERT INTO bottoms_color (item_id, color_name) VALUES (:item_id, :color_name)');}
-	if($category_name=="アクセサリー"){$stmt = $db->prepare('INSERT INTO accessory_color (item_id, color_name) VALUES (:item_id, :color_name)');}
-
-	# 変数を束縛する
-	$stmt->bindParam(':item_id', $item_id);
-	$stmt->bindParam(':color_name', $color_name);
-
-	# 変数に値を設定し、SQLを実行
-	$color_name = $in["color_name"];
+	$color_id = $in["color_id"];
+	$category_id = $in["category_id"];
 	$stmt->execute();
 }
 
 #すでに存在する商品の名前にならないかチェックし、重複があるとTRUEを返す
-function item_check($exception_item){
+function item_check(){
 	global $in;
-	global $category_name;
 	global $db;
 
 	$flag =FALSE;
 
-	if($category_name=="トップス"){$query = "SELECT * FROM tops_data WHERE item_flag = 1";}
-	if($category_name=="ボトムス"){$query = "SELECT * FROM bottoms_data WHERE item_flag = 1";}
-	if($category_name=="アクセサリー"){$query = "SELECT * FROM accessory_data WHERE item_flag = 1";}
+	$query = "SELECT * FROM item_data WHERE item_flag = 1";
 
 	# プリペアードステートメントを準備
 	$stmt = $db->prepare($query);
@@ -117,12 +91,11 @@ function item_check($exception_item){
 	$stmt->execute();
 
 	while($row = $stmt->fetch()){
-
-		if($in["item_name"] == $row['item_name']){
-			if($exception_item == $row['item_id']) continue;#自分の名前はチェックを飛ばす
-			$flag = TRUE;
-			break;
-		}
+		if($in["category_id"] != $row["category_id"])continue;
+		if($in["item_name"] != $row['item_name'])continue;
+		if($in["color_id"] != $row['color_id'])continue;
+		$flag =TRUE;
+		break;
 	}
 	return $flag;
 }
@@ -264,9 +237,7 @@ function item_delete(){
 	}
 
 	# プリペアードステートメントを準備
-	if($category_name=="トップス"){$stmt = $db->prepare('UPDATE tops_data SET item_flag = 0 WHERE item_id = :item_id');}
-	if($category_name=="ボトムス"){$stmt = $db->prepare('UPDATE bottoms_data SET item_flag = 0 WHERE item_id = :item_id');}
-	if($category_name=="アクセサリー"){$stmt = $db->prepare('UPDATE accessory_data SET item_flag = 0 WHERE item_id = :item_id');}
+	$stmt = $db->prepare('UPDATE item_data SET item_flag = 0 WHERE item_id = :item_id');
 
 	# 変数を束縛する
 	$stmt->bindParam(':item_id', $item_id);
@@ -283,12 +254,13 @@ function item_search_manage(){
 	global $in;
 	global $db;
 	global $tmpl_dir;
-
+	
+	$category_name = $in['category_name'];
 
 	# 自身のパス
 	$script_name=$_SERVER['SCRIPT_NAME'];
 
-	$row = get_data_from_name($in['category_name'],1);
+	$row = get_data_from_name($category_name,1);
 	$category_id = $row["category_id"];
 
 	# SQLを作成
@@ -313,17 +285,24 @@ function item_search_manage(){
 		$item_data .= "<td class=\"form-left\">$row2[color_name]</td>";
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
 		$item_data .= "<td class=\"form-left\">$item_number</td>";
+		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id&category_name=$category_name\">編集</a></td>";
+		$item_data .= "<td><a href=\"$script_name?mode=item&change_stock_flag=1&item_id=$item_id&category_name=$category_name\">在庫操作</a></td>";
+		$item_data .= "<td><a href=\"$script_name?mode=item&state=delete&item_id=$item_id&category_name=$category_name\">削除</a></td>";
 		$item_data .= "</tr>\n";
 	}
 	# 掲示板テンプレート読み込み
 	$tmpl = page_read("managementlist");
 
 	$category_data =category_list();
+	$category_list = pulldown_list(1);
+	$color_list = pulldown_list(2);
 
 	# 文字変換
 	$tmpl = str_replace("!item_data!",$item_data,$tmpl);
 	$tmpl = str_replace("!category_name!",$category_name,$tmpl);
 	$tmpl = str_replace("!category_data!",$category_data,$tmpl);
+	$tmpl = str_replace("!color_list!",$color_list,$tmpl);
+	$tmpl = str_replace("!category_list!",$category_list,$tmpl);
 	
 	echo $tmpl;
 	exit;
@@ -379,7 +358,7 @@ function item_search(){
 		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
 		$item_data .= "<td class=\"form-left\">$item_exist</td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&item_id=$item_id&category_name=$category_name\">編集</a></td>";
-		$item_data .= "<td><a href=\"$script_name?mode=item&color_flag=1&item_id=$item_id&category_name=$category_name\">色追加</a></td>";
+		$item_data .= "<td><a href=\"$script_name?mode=item&change_stock_flag=1&item_id=$item_id&category_name=$category_name\">色追加</a></td>";
 		$item_data .= "<td><a href=\"$script_name?mode=item&state=delete&item_id=$item_id&category_name=$category_name\">削除</a></td>";
 		$item_data .= "</tr>\n";
 	}
@@ -424,7 +403,7 @@ function item_search(){
 		$color_name= substr($color_name, 0, -1);
 		
 		# 掲示板テンプレート読み込み
-		if($in["color_flag"]==1){
+		if($in["change_stock_flag"]==1){
 			$tmpl = page_read("color_edit");
 		}else{
 			$tmpl = page_read("item_edit");

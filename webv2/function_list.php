@@ -32,6 +32,9 @@ function parse_form(){
 	return $in;
 }
 
+#-----------------------------------------------------------
+# カテゴリの一覧を取得、ulとliで並べる
+#-----------------------------------------------------------
 function category_list(){
 	global $db;
 	global $tmpl_dir;
@@ -56,6 +59,42 @@ function category_list(){
     return $category_data;
 }
 
+function pulldown_list($type){
+	global $db;
+	global $tmpl_dir;
+
+	# 自身のパス
+	$script_name=$_SERVER['SCRIPT_NAME'];
+
+	# SQLを作成
+	if($type==1){
+		$query = "SELECT * FROM item_category";
+		$get_list="<select name='category_id'>";
+		$want_name='category_name';
+		$want_id='category_id';
+	}else if($type==2){
+		$query = "SELECT * FROM item_color";
+		$get_list="<select name='color_id'>";
+		$want_name='color_name';
+		$want_id='color_id';
+	}else{return -1;}
+
+
+	# プリペアードステートメントを準備
+	$stmt = $db->prepare($query);
+	$stmt->execute();
+
+	while($row = $stmt->fetch()){
+		$get_list .= "<option value='$row[$want_id]'>$row[$want_name]</option>";
+    }
+    $get_list .= "</select>\n";
+
+    return $get_list;
+}
+
+#-----------------------------------------------------------
+# 読み込み
+#-----------------------------------------------------------
 function page_read($page){
 	global $tmpl_dir;
 	
@@ -68,6 +107,9 @@ function page_read($page){
 	return $tmpl;
 }
 
+#-----------------------------------------------------------
+# 名前からデータを受け取る
+#-----------------------------------------------------------
 function get_data_from_name($name,$type){
 	global $in;
 	global $db;
@@ -84,6 +126,9 @@ function get_data_from_name($name,$type){
 	return $row;
 }
 
+#-----------------------------------------------------------
+# idからデータを受け取る
+#-----------------------------------------------------------
 function get_data_from_id($id,$type){
 	global $in;
 	global $db;

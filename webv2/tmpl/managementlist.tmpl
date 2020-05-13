@@ -19,6 +19,11 @@
 <h2>!category_name!商品登録</h2>
 <form method="post" action="management.php">
 <table border=1>
+	</tr>
+    	<tr>
+		<td>カテゴリ</td>
+		<td>!category_list!</td>
+	</tr>
 	<tr>
 		<td>商品名</td>
 		<td><input name="item_name" type="text" value=""></td>
@@ -29,7 +34,11 @@
 	</tr>
     	<tr>
 		<td>色</td>
-		<td><input name="color_name" type="text" value=""></td>
+		<td>!color_list!</td>
+	</tr>
+		<tr>
+		<td>作成日時</td>
+		<td><input name="create_date" type="text" value=""></td>
 	</tr>
 	<tr>
 		<td colspan="2"><input type="submit" name="sub" value="送信"></td>
@@ -43,7 +52,7 @@
 
 <h2>!category_name!商品一覧</h2>
 <table border=1>
-<tr><th>商品ID</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>色追加</th><th>削除</th>
+<tr><th>商品ID</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>在庫操作</th><th>削除</th>
 !item_data!
 </table>
 <form action="customer.php" method ="get" class="go_back">
