@@ -4,17 +4,19 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title>!category_name!管理画面</title>
 <link rel="stylesheet" type="text/css" href="css/normalize.css">
-<link href="css/style_manage.css" rel="stylesheet" type="text/css" />
+<link href="css/style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-<header>
+
+<!-- <header>
 <nav id="navi_button">
 <form action="management.php" method ="get">
 !category_data!
 </nav>
 </form>
-</header>
+</header> -->
 
+<main class="management_page">
 <h2>商品在庫登録</h2>
 <form method="post" action="management.php">
 <table border=1>
@@ -43,7 +45,7 @@
 		<td>!create_date!</td>
 	</tr>
 	<tr>
-		<td>在庫変更数</td>
+		<td>在庫変動量</td>
 		<td>
 		<input name="item_increase" type="text" >
 		<input type="submit" name="sub" value="送信">
@@ -58,7 +60,7 @@
 </form>
 <br>
 
-<h2>在庫変動履歴</h2>
+<h2>この商品の在庫変動履歴</h2>
 <table border=1>
 <tr><th>履歴管理ID</th><th>変更日時</th><th>増減値</th><th>商品ID</th>
 !stock_data!
@@ -69,8 +71,10 @@
 <tr><th>カテゴリ</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>色追加</th><th>削除</th>
 !item_data!
 </table>
+</main>
+
 <form action="management.php" method ="get" class="go_back">
-<input type="submit" value="戻る">
+<input type="submit" value="管理topへ">
 <input type="hidden" name="category_name" value="!category_name!">
 </form>
 </body>

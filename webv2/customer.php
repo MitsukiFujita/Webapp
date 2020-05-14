@@ -22,10 +22,7 @@ parse_form();
 try {
 	$db = new PDO("mysql:host={$host}; dbname={$datebase}; charset=utf8", $testuser, $testpass);
 	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-	if($in["state"] == "insert") { item_insert(); }
-	else if($in["state"] == "update") { item_update(); }
-	else if($in["state"] == "delete") { item_delete(); }
-	else if($in["state"] == "buy"){ 
+	if($in["state"] == "buy"){ 
 		$in["item_increase"] =$in["item_increase"]*-1;
 		$row = get_data_from_name($in['item_name'],3);
 		$in["item_id"] = $row["item_id"];
@@ -68,30 +65,37 @@ function item_search_customer(){
 		$item_name = $row["item_name"];
 
 		$color_list="<select name='color_id'>";
+		$stock_list="<select name='item_stock'>";
+		$price_list="<select name='item_price'>";
 
-		$query2 = "SELECT * FROM item_data WHERE item_name = :want_name AND category_id = :category_id";	
+		$query2 = "SELECT * FROM item_data WHERE ( item_name = :want_name AND category_id = :category_id ) and item_flag = 1";	
 		$stmt2 = $db->prepare($query2);
 		$stmt2->bindParam(':want_name', $item_name);
 		$stmt2->bindParam(':category_id', $category_id);
 		$stmt2->execute();
 
+		$i = 1;
 		while($row2 = $stmt2->fetch()){
+			if( $row2['item_stock'] == 0 ){$item_stock = "sold out";}
+			else{$item_stock = $row2['item_stock']."個";}
+			$stock_list .= "<option value='$item_stock'>$i:$item_stock</option>";
+			$price_list .= "<option value='$row2[item_price]'>$i:$row2[item_price] 円</option>";
+
 			$row3 = get_data_from_id($row2["color_id"],2);
-			$color_list.= "<option value='$row2[color_id]'>$row3[color_name]</option>";
+			$color_list.= "<option value='$row2[color_id]'>$i:$row3[color_name]</option>";
+			$i ++;
 		}
 		$color_list .= "</select>";
-
-		$item_stock = $row['item_stock'];
-		if( $item_stock == 0 ){$item_stock = "sold out";}
-
+		$stock_list .= "</select>";
+		$price_list .= "</select>";
 
 		$item_data .= "<tr>";
 		$item_data .= "<form action='customer.php' method='post'>";
 		$item_data .= "<td class=\"form-left\">$in[category_name]</td>";
 		$item_data .= "<td class=\"form-left\">$item_name</td>";
 		$item_data .= "<td class=\"form-left\">$color_list</td>";
-		$item_data .= "<td class=\"form-left\">$row[item_price]</td>";
-		$item_data .= "<td class=\"form-left\">$item_stock</td>";
+		$item_data .= "<td class=\"form-left\">$price_list</td>";
+		$item_data .= "<td class=\"form-left\">$stock_list</td>";
 		$item_data .= "<td class=\"form-left\">$item_increase 個</td>";
 		$item_data .= "<td class=\"form-left\"><input type='submit' value='購入'></td>";
 		$item_data .= "<input type='hidden' name='category_name' value='$in[category_name]'>";

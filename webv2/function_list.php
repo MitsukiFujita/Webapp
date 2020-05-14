@@ -8,8 +8,8 @@ function parse_form(){
 	global $in;
 
 	$param = array();
-	if (isset($_GET) && is_array($_GET)) { $param += $_GET; }
-	if (isset($_POST) && is_array($_POST)) { $param += $_POST; }
+	if (isset($_GET) /*&& is_array($_GET)*/) { $param += $_GET; }
+	if (isset($_POST) /*&& is_array($_POST)*/) { $param += $_POST; }
 	
 	foreach($param as $key => $val) {
 		# 2次元配列から値を取り出す
@@ -26,11 +26,31 @@ function parse_form(){
 
 		$in[$key] = $val;
 	}
-	if(isset($_GET["category_name"])){$in["category_name"] = $_GET["category_name"];}
+	/*if(isset($_GET["category_name"])){$in["category_name"] = $_GET["category_name"];}
 	if(isset($_POST["category_name"])){$in["category_name"] = $_POST["category_name"];}
 
-	return $in;
+	if(isset($_GET["manage"])){$in["manage"] = $_GET["manage"];}
+	if(isset($_POST["manage"])){$in["manage"] = $_POST["manage"];}
+	return $in;*/
+	if(isset($_GET["color_name"])){$in["color_name"] = $_GET["color_name"];}
+	if(isset($_POST["color_name"])){$in["color_name"] = $_POST["color_name"];}
 }
+
+#-----------------------------------------------------------
+# 読み込み
+#-----------------------------------------------------------
+function page_read($page){
+	global $tmpl_dir;
+	
+	# テンプレート読み込み
+	$conf = fopen( "$tmpl_dir/{$page}.tmpl", "r") or die;
+	$size = filesize("$tmpl_dir/{$page}.tmpl");
+	$tmpl = fread($conf, $size);
+	fclose($conf);
+	
+	return $tmpl;
+}
+
 
 #-----------------------------------------------------------
 # エラー画面
@@ -65,7 +85,7 @@ function category_list(){
 	$stmt = $db->prepare($query);
 	$stmt->execute();
 
-	$category_data = "<ul>";
+	$category_data = "<ul class='menu'>";
 	while($row = $stmt->fetch()){
 		$category_name = $row['category_name'];
 		$category_data .= "<li><input type='submit' name='category_name' value='$category_name'></li>";
@@ -75,6 +95,9 @@ function category_list(){
     return $category_data;
 }
 
+#-----------------------------------------------------------
+# 色やカテゴリの一覧をプルダウンで表示
+#-----------------------------------------------------------
 function pulldown_list($type,$select_id=-1,$limit=0,$name=""){
 	global $db;
 	global $tmpl_dir;
@@ -105,7 +128,6 @@ function pulldown_list($type,$select_id=-1,$limit=0,$name=""){
 			$want_id='color_id';
 		}else{return -1;}
 
-
 		# プリペアードステートメントを準備
 		$stmt = $db->prepare($query);
 		$stmt->execute();
@@ -121,21 +143,6 @@ function pulldown_list($type,$select_id=-1,$limit=0,$name=""){
 	}
 
     return $get_list;
-}
-
-#-----------------------------------------------------------
-# 読み込み
-#-----------------------------------------------------------
-function page_read($page){
-	global $tmpl_dir;
-	
-	# テンプレート読み込み
-	$conf = fopen( "$tmpl_dir/{$page}.tmpl", "r") or die;
-	$size = filesize("$tmpl_dir/{$page}.tmpl");
-	$tmpl = fread($conf, $size);
-	fclose($conf);
-	
-	return $tmpl;
 }
 
 #-----------------------------------------------------------
@@ -200,7 +207,7 @@ function stock_update(){
 
 	$error_notes="";
 	if(!preg_match("/^-?[0-9]+$/", $item_increase)){
-		$error_notes.="・半角で数値を入力してください<br>";
+		$error_notes.="・入力は半角数字で、整数のみ受け付けています<br>";
 	}else{
 		if($item_increase =='0'){$error_notes.="・入力がありません<br>";}
 		$item_stock = $item_stock+$item_increase;

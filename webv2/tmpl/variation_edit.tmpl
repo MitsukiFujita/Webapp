@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>!category_name!管理画面</title>
+<link rel="stylesheet" type="text/css" href="css/normalize.css">
+<link href="css/style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+<form action="management.php" method ="get" class="manage_button">
+<input type="submit" name="manage" value="色">
+<input type="submit" name="manage" value="カテゴリ">
+<input type="hidden" name="category_name" value="!category_name!">
+</form>
+
+<main class="management_page">
+<h2>!value!登録</h2>
+<form method="post" action="management.php">
+<table border=1>
+    <tr>
+		<td>!value!</td>
+		<td><input name="variation_name" type="text" value=""></td>
+		<td colspan="2"><input type="submit" name="sub" value="送信"></td>
+	</tr>
+</table>
+<input type="hidden" name="state" value="variation">
+<input type="hidden" name="manage" value="!value!">
+<input type="hidden" name="category_name" value="!category_name!">
+</form>
+<br>
+
+<h2>!value!一覧</h2>
+<table border=1>
+<tr><th>!value!ID</th><th>!value!名</th></tr>
+!value_data!
+</table>
+</main>
+
+<form action="management.php" method ="get" class="go_back">
+<input type="submit" value="管理topへ">
+<input type="hidden" name="category_name" value="!category_name!">
+</form>
+</body>
+</html>

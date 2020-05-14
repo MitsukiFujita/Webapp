@@ -1,26 +1,36 @@
 <!doctype html>
 <html>
 <head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
 <title>!category_name!管理画面</title>
 <link href="css/normalize.css" rel="stylesheet" type="text/css" />
-<link href="css/style_manage.css" rel="stylesheet" type="text/css" />
+<link href="css/style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 
 <header>
-<form action="management.php" id="manage_button">
-<input type="submit" name="manage" value="色追加">
-<input type="submit" name="manage" value="カテゴリ追加">
+<form action="management.php" method ="get" class="manage_button">
+<input type="submit" name="manage" value="色">
+<input type="submit" name="manage" value="カテゴリ">
 <input type="hidden" name="category_name" value="!category_name!">
 </form>
-<nav id="navi_button">
+<div class="wrapper">
+    <p class="btn-gnavi">
+      <span></span>
+      <span></span>
+      <span></span>
+    </p>
+<nav class="global-navi">
 <form action="management.php" method ="get">
 !category_data!
-</nav>
 </form>
+</nav>
+</div>
 </header>
 
+<main class="management_page">
 <h2>商品登録</h2>
 <form method="post" action="management.php">
 <table border=1>
@@ -57,12 +67,38 @@
 
 <h2>!category_name!商品一覧</h2>
 <table border=1>
-<tr><th>商品ID</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>在庫操作</th><th>削除</th>
+<tr><th>カテゴリ</th><th>商品名</th><th>色</th><th>値段</th><th>在庫有無</th><th>編集</th><th>在庫操作</th><th>削除</th>
 !item_data!
 </table>
+</main>
+
 <form action="customer.php" method ="get" class="go_back">
-<input type="submit" value="戻る">
+<input type="submit" value="顧客画面へ">
 <input type="hidden" name="category_name" value="!category_name!">
 </form>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+  <script>
+    $(function() {
+      $(".btn-gnavi").on("click", function() {
+        // ハンバーガーメニューの位置を設定
+        var rightVal = 0;
+        if ($(this).hasClass("open")) {
+          // 位置を移動させメニューを開いた状態にする
+          rightVal = -300;
+          // メニューを開いたら次回クリック時は閉じた状態になるよう設定
+          $(this).removeClass("open");
+        } else {
+          // メニューを開いたら次回クリック時は閉じた状態になるよう設定
+          $(this).addClass("open");
+        }
+
+        $(".global-navi").stop().animate({
+          right: rightVal
+        }, 200);
+      });
+    });
+  </script>
+
 </body>
 </html>

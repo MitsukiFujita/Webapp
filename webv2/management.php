@@ -28,6 +28,7 @@ try {
 	else if($in["state"] == "update") { item_update(); }
 	else if($in["state"] == "stock") { stock_update(); }
 	else if($in["state"] == "delete") { item_delete(); }
+	else if($in["state"] == "variation") { variation_edit(); }
 	item_search_manage();
 }catch (PDOException $e) {
 	die ("PDO Error:" . $e->getMessage());
@@ -41,8 +42,9 @@ function item_insert(){
 	global $in;
 	global $db;
 	global $tmpl_dir;
-	global $category_name;
 
+	$item_price = $in["item_price"];
+	
 	#エラーチェック
 	$error_notes="";
 	if($in["item_name"] == ""){
@@ -50,6 +52,8 @@ function item_insert(){
 	}
 	if($in["item_price"] == ""){
 		$error_notes.="・値段が未入力です。<br>";
+	}else if(!preg_match("/^[0-9]+$/", $in["item_price"])){
+		$error_notes.="・値段の入力は半角数字で自然数のみ受け付けています<br>";
 	}
 	if(item_check()){
 	$error_notes.="・登録済みの商品です。<br>";
@@ -119,10 +123,13 @@ function item_update(){
 	}
 	if($in["item_price"] == ""){
 		$error_notes.="・値段が未入力です。<br>";
+	}else if(!preg_match("/^[0-9]+$/", $in["item_price"])){
+		$error_notes.="・値段の入力は半角数字で自然数のみ受け付けています<br>";
 	}
 	if(item_check()){
 		$error_notes.="・登録済みの商品です。<br>";
 	}
+
 
 	#エラーが存在する場合
 	if($error_notes != "") {
@@ -149,81 +156,11 @@ function item_update(){
 }
 
 #-----------------------------------------------------------
-# 色の追加
-#-----------------------------------------------------------
-function color_update(){
-	global $in;
-	global $db;
-	global $tmpl_dir;
-	global $category_name;
-
-	#エラーチェック
-	$error_notes="";
-	if($in["item_id"] == ""){
-		$error_notes.="・編集する商品を選択してください。<br>";
-	}
-	if($in["color_name"] == ""){
-		$error_notes.="・色が未入力です。<br>";
-	}
-	if(color_check()){
-		$error_notes.="・登録されている色です。<br>";
-	}
-	
-	#エラーが存在する場合
-	if($error_notes != "") {
-		error($error_notes);
-	}
-
-	if($category_name=="トップス"){$stmt = $db->prepare('INSERT INTO tops_color (item_id, color_name) VALUES (:item_id, :color_name)');}
-	if($category_name=="ボトムス"){$stmt = $db->prepare('INSERT INTO bottoms_color (item_id, color_name) VALUES (:item_id, :color_name)');}
-	if($category_name=="アクセサリー"){$stmt = $db->prepare('INSERT INTO accessory_color (item_id, color_name) VALUES (:item_id, :color_name)');}
-
-	# 変数を束縛する
-	$stmt->bindParam(':item_id', $item_id);
-	$stmt->bindParam(':color_name', $color_name);
-
-	# 変数に値を設定し、SQLを実行
-	$item_id = $in["item_id"];
-	$color_name = $in["color_name"];
-	$stmt->execute();
-
-}
-
-#指定した商品にすでに存在する色にならないかチェックし、重複があるとTRUEを返す
-function color_check(){
-	global $in;
-	global $category_name;
-	global $db;
-
-	$flag =FALSE;
-
-	if($category_name=="トップス"){$query = "SELECT * FROM tops_color WHERE item_id = :item_id";}
-	if($category_name=="ボトムス"){$query = "SELECT * FROM bottoms_color WHERE item_id = :item_id";}
-	if($category_name=="アクセサリー"){$query = "SELECT * FROM accessory_color WHERE item_id = :item_id";}
-
-	# プリペアードステートメントを準備
-	$stmt = $db->prepare($query);
-	$stmt->bindParam(':item_id', $item_id);
-	$item_id = $in["item_id"];
-	$stmt->execute();
-
-	while($row = $stmt->fetch()){
-		if($in["color_name"] == $row['color_name']){
-			$flag = TRUE;
-			break;
-		}
-	}
-	return $flag;
-}
-
-#-----------------------------------------------------------
 # 商品削除
 #-----------------------------------------------------------
 function item_delete(){
 	global $in;
 	global $db;
-	global $tmpl_dir;
-	global $category_name;
 
 	#エラーチェック
 	$error_notes="";
@@ -317,10 +254,11 @@ function item_search_manage(){
 			$category_id = $row["category_id"];
 		
 			# SQLを作成
-			$query = "SELECT * FROM item_update_data";
+			$query = "SELECT * FROM item_update_data where item_id =:item_id";
 			
 			# プリペアードステートメントを準備
 			$stmt = $db->prepare($query);
+			$stmt->bindParam(':item_id', $item_id);
 			$stmt->execute();
 		
 			$stock_data = "";	
@@ -352,6 +290,37 @@ function item_search_manage(){
 		$tmpl = str_replace("!create_date!",$create_date,$tmpl);
 		$tmpl = str_replace("!category_name!",$category_name,$tmpl);
 		$tmpl = str_replace("!stock_data!",$stock_data,$tmpl);
+	}else if($in["manage"] != ""){
+
+		if($in["manage"] == "色"){
+		$query = "SELECT * FROM item_color";
+		$id_value = "color_id";
+		$name_value = "color_name";
+		}else{
+		$query = "SELECT * FROM item_category";
+		$id_value = "category_id";
+		$name_value = "category_name";
+		}
+		# プリペアードステートメントを準備
+		$stmt = $db->prepare($query);
+		$stmt->execute();
+
+		$value_data ="";
+		while($row = $stmt->fetch()){
+			$value_data .= "<tr>";
+			$value_data.= "<td class=\"form-left\">$row[$id_value]</td>";
+			$value_data .= "<td class=\"form-left\">$row[$name_value]</td>";
+			$value_data .= "</tr>\n";
+		}
+
+		$tmpl = page_read("variation_edit");
+
+		# 文字変換
+		$tmpl = str_replace("!value!",$in["manage"],$tmpl);
+		$tmpl = str_replace("!value_data!",$value_data,$tmpl);
+		$tmpl = str_replace("!category_name!",$category_name,$tmpl);
+		$tmpl = str_replace("!name_value!",$name_value,$tmpl);
+	
 	}else{
 	# 掲示板テンプレート読み込み
 	$tmpl = page_read("managementlist");
@@ -372,3 +341,56 @@ function item_search_manage(){
 
 }
 
+
+
+#-----------------------------------------------------------
+# カテゴリ・色追加
+#-----------------------------------------------------------
+function variation_edit(){
+	global $in;
+	global $db;
+
+	if($in["manage"] == "色"){
+		$query = "SELECT * FROM item_color";
+		$name_value = "color_name";
+		}else{
+		$query = "SELECT * FROM item_category";
+		$name_value = "category_name";
+	}
+
+	$stmt = $db->prepare($query);
+	$stmt->execute();
+
+	$variation_name = $in["variation_name"];
+
+	$error_notes="";
+	if($variation_name == ""){
+			$error_notes.="・名前が入力されていません<br>";
+	}else{
+		while($row = $stmt->fetch()){
+			#エラーチェック
+			if($variation_name == $row[$name_value]){
+				$error_notes.="・既に登録されている名前です。<br>";
+			}
+		}
+	}
+	
+	#エラーが存在する場合
+	if($error_notes != "") {
+		error($error_notes);
+	}
+
+	if($in["manage"] == "色"){
+		$stmt = $db->prepare('INSERT INTO item_color (color_name) VALUES (:variation_name)');
+	}else{
+		$stmt = $db->prepare('INSERT INTO item_category (category_name) VALUES (:variation_name)');
+	}
+
+	# 変数を束縛する
+	$stmt->bindParam(':variation_name',$variation_name);
+
+	# 変数に値を設定し、SQLを実行
+	$stmt->execute();
+
+	
+}
