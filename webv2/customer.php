@@ -64,9 +64,7 @@ function item_search_customer(){
 		if ($item_name == $row["item_name"]){continue;}
 		$item_name = $row["item_name"];
 
-		$color_list="<select name='color_id'>";
-		$stock_list="<select name='item_stock'>";
-		$price_list="<select name='item_price'>";
+		$color_price_stock_list="<select name='color_id'>";
 
 		$query2 = "SELECT * FROM item_data WHERE ( item_name = :want_name AND category_id = :category_id ) and item_flag = 1";	
 		$stmt2 = $db->prepare($query2);
@@ -78,11 +76,10 @@ function item_search_customer(){
 		while($row2 = $stmt2->fetch()){
 			if( $row2['item_stock'] == 0 ){$item_stock = "sold out";}
 			else{$item_stock = $row2['item_stock']."個";}
-			$stock_list .= "<option value='$item_stock'>$i:$item_stock</option>";
-			$price_list .= "<option value='$row2[item_price]'>$i:$row2[item_price] 円</option>";
-
 			$row3 = get_data_from_id($row2["color_id"],2);
-			$color_list.= "<option value='$row2[color_id]'>$i:$row3[color_name]</option>";
+			$color_price_stock_list.= "<option value='$row2[color_id]'>$i:$row3[color_name]";
+			$color_price_stock_list .= ",$row2[item_price]円";
+			$color_price_stock_list .= ",$item_stock</option>";
 			$i ++;
 		}
 		$color_list .= "</select>";
@@ -93,9 +90,7 @@ function item_search_customer(){
 		$item_data .= "<form action='customer.php' method='post'>";
 		$item_data .= "<td class=\"form-left\">$in[category_name]</td>";
 		$item_data .= "<td class=\"form-left\">$item_name</td>";
-		$item_data .= "<td class=\"form-left\">$color_list</td>";
-		$item_data .= "<td class=\"form-left\">$price_list</td>";
-		$item_data .= "<td class=\"form-left\">$stock_list</td>";
+		$item_data .= "<td class=\"form-left\" colspan='3'>$color_price_stock_list</td>";
 		$item_data .= "<td class=\"form-left\">$item_increase 個</td>";
 		$item_data .= "<td class=\"form-left\"><input type='submit' value='購入'></td>";
 		$item_data .= "<input type='hidden' name='category_name' value='$in[category_name]'>";

@@ -106,7 +106,7 @@ function pulldown_list($type,$select_id=-1,$limit=0,$name=""){
 	$script_name=$_SERVER['SCRIPT_NAME'];
 	if($type==0){
 		$get_list="<select name='$name'>";
-		for($i=0;$i<$limit;$i++){
+		for($i=0;$i<=$limit;$i++){
 			if( $i == $select_id ){
 				$get_list .= "<option value='$i' selected >$i</option>";
 				continue;
